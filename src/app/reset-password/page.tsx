@@ -20,11 +20,20 @@ function readRecoveryTokens(searchParams: URLSearchParams) {
 }
 
 function getFriendlyRecoveryError(searchParams: URLSearchParams) {
+  const error = searchParams.get('error');
   const errorCode = searchParams.get('error_code');
   const description = searchParams.get('error_description');
 
   if (errorCode === 'otp_expired') {
     return '재설정 링크가 만료되었습니다. 비밀번호 재설정 메일을 다시 요청해 주세요.';
+  }
+
+  if (error === 'recovery_failed' || error === 'email_confirmation_failed') {
+    return '재설정 링크를 확인하지 못했습니다. 새 메일을 요청한 뒤 가장 최근 링크를 사용해 주세요.';
+  }
+
+  if (error === 'recovery_session_missing') {
+    return '재설정 세션을 준비하지 못했습니다. 비밀번호 재설정 메일을 다시 요청해 주세요.';
   }
 
   if (description) {
@@ -39,7 +48,6 @@ export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const tokenSnapshot = useMemo(() => readRecoveryTokens(searchParams), [searchParams]);
-  const recoveryCode = searchParams.get('code');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -80,20 +88,24 @@ export default function ResetPasswordPage() {
           if (!cancelled) {
             setReady(true);
             setChecking(false);
+            window.history.replaceState({}, document.title, '/reset-password');
           }
           return;
         }
 
-        if (recoveryCode) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(recoveryCode);
-          if (exchangeError) {
-            throw exchangeError;
-          }
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        if (session) {
           if (!cancelled) {
             setReady(true);
             setChecking(false);
-            window.history.replaceState({}, document.title, '/reset-password');
           }
           return;
         }
@@ -120,7 +132,7 @@ export default function ResetPasswordPage() {
     return () => {
       cancelled = true;
     };
-  }, [recoveryCode, searchParams, supabase, tokenSnapshot]);
+  }, [searchParams, supabase, tokenSnapshot]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

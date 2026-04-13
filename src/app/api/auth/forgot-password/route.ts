@@ -19,10 +19,11 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const redirectTo = `${request.nextUrl.origin}/reset-password`;
+    const redirectTo = new URL('/auth/confirm', request.nextUrl.origin);
+    redirectTo.searchParams.set('next', '/reset-password');
     const { error } = await supabase.auth.resetPasswordForEmail(
       parsed.data.email.trim().toLowerCase(),
-      { redirectTo }
+      { redirectTo: redirectTo.toString() }
     );
 
     if (error) {

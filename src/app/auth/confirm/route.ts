@@ -37,17 +37,35 @@ function buildRedirectUrl(
   return url;
 }
 
+function normalizeNextPath(next: string | null) {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) {
+    return null;
+  }
+
+  return next;
+}
+
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   const tokenHash = request.nextUrl.searchParams.get('token_hash');
   const type = request.nextUrl.searchParams.get('type');
+  const nextPath = normalizeNextPath(request.nextUrl.searchParams.get('next'));
+  const isRecoveryFlow = type === 'recovery' || nextPath === '/reset-password';
 
-  const invalidLinkUrl = buildRedirectUrl(request, '/login', {
-    error: 'email_confirmation_failed',
-  });
-  const manualLoginUrl = buildRedirectUrl(request, '/login', {
-    auth: 'email_confirmed_manual_login',
-  });
+  const invalidLinkUrl = buildRedirectUrl(
+    request,
+    isRecoveryFlow ? '/reset-password' : '/login',
+    isRecoveryFlow
+      ? { error: 'recovery_failed' }
+      : { error: 'email_confirmation_failed' }
+  );
+  const manualLoginUrl = buildRedirectUrl(
+    request,
+    isRecoveryFlow ? '/reset-password' : '/login',
+    isRecoveryFlow
+      ? { error: 'recovery_session_missing' }
+      : { auth: 'email_confirmed_manual_login' }
+  );
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -70,13 +88,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(invalidLinkUrl);
     }
 
+    if (isRecoveryFlow) {
+      return NextResponse.redirect(buildRedirectUrl(request, nextPath ?? '/reset-password'));
+    }
+
     const session = await buildAuthSession(supabase);
     if (!session) {
       return NextResponse.redirect(manualLoginUrl);
     }
 
     return NextResponse.redirect(
-      buildRedirectUrl(request, getDefaultRedirectForUser(session.user))
+      buildRedirectUrl(request, nextPath ?? getDefaultRedirectForUser(session.user))
     );
   } catch (error) {
     console.error('[Auth] email confirmation failed:', error);
