@@ -16,6 +16,12 @@ function buildLoginUrl(request: NextRequest, role: 'student' | 'teacher') {
   return loginUrl;
 }
 
+function buildAccessDeniedUrl(request: NextRequest, required: 'student' | 'teacher') {
+  const deniedUrl = new URL('/access-denied', request.url);
+  deniedUrl.searchParams.set('required', required);
+  return deniedUrl;
+}
+
 function copyCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((cookie) => {
     to.cookies.set(cookie);
@@ -112,7 +118,10 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  if (pathname.startsWith('/student/')) {
+  const isStudentPath = pathname === '/student' || pathname.startsWith('/student/');
+  const isTeacherPath = pathname === '/teacher' || pathname.startsWith('/teacher/');
+
+  if (isStudentPath) {
     if (!sessionUser) {
       return copyCookies(
         response,
@@ -123,12 +132,19 @@ export async function proxy(request: NextRequest) {
     if (sessionUser.role !== 'student') {
       return copyCookies(
         response,
-        NextResponse.redirect(new URL(getDefaultRedirectForUser(sessionUser), request.url))
+        NextResponse.redirect(buildAccessDeniedUrl(request, 'student'))
+      );
+    }
+
+    if (pathname === '/student') {
+      return copyCookies(
+        response,
+        NextResponse.redirect(new URL('/student/upload', request.url))
       );
     }
   }
 
-  if (pathname.startsWith('/teacher/')) {
+  if (isTeacherPath) {
     if (!sessionUser) {
       return copyCookies(
         response,
@@ -139,11 +155,18 @@ export async function proxy(request: NextRequest) {
     if (sessionUser.role !== 'teacher') {
       return copyCookies(
         response,
-        NextResponse.redirect(new URL(getDefaultRedirectForUser(sessionUser), request.url))
+        NextResponse.redirect(buildAccessDeniedUrl(request, 'teacher'))
       );
     }
 
     const isPendingPage = pathname === '/teacher/pending';
+
+    if (pathname === '/teacher') {
+      return copyCookies(
+        response,
+        NextResponse.redirect(new URL(getDefaultRedirectForUser(sessionUser), request.url))
+      );
+    }
 
     if (isPendingPage && canAccessTeacherFeatures(sessionUser)) {
       return copyCookies(
@@ -164,5 +187,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/login', '/signup', '/student/:path*', '/teacher/:path*'],
+  matcher: ['/login', '/signup', '/student', '/student/:path*', '/teacher', '/teacher/:path*'],
 };
