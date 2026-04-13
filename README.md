@@ -81,78 +81,102 @@ Gemini 또는 Vision 호출이 실패하면 fallback 결과를 반환하며, 이
 
 ```text
 stephint/
-├─ public/                     # 정적 에셋
-├─ scripts/                    # 로컬 점검 및 보조 스크립트
+├─ public/
+│  ├─ file.svg
+│  ├─ globe.svg
+│  ├─ next.svg
+│  ├─ vercel.svg
+│  └─ window.svg
 ├─ src/
 │  ├─ app/
-│  │  ├─ api/                  # 분석, 인증, 힌트, 제출 기록, 교사 API
-│  │  ├─ access-denied/        # 접근 제한 화면
-│  │  ├─ features/             # 랜딩 페이지용 소개 섹션
-│  │  ├─ forgot-password/      # 비밀번호 재설정 요청
-│  │  ├─ login/                # 로그인 화면
-│  │  ├─ reset-password/       # 비밀번호 재설정 화면
-│  │  ├─ signup/               # 회원가입 화면
-│  │  ├─ student/              # 학생 업로드, 결과, 기록 화면
-│  │  ├─ teacher/              # 교사 대시보드, 학생 상세, 승인 대기 화면
-│  │  ├─ globals.css           # 전역 스타일
-│  │  ├─ layout.tsx            # 앱 공통 레이아웃
-│  │  └─ page.tsx              # 메인 랜딩 페이지
+│  │  ├─ access-denied/
+│  │  │  └─ page.tsx
+│  │  ├─ api/
+│  │  │  ├─ analyze/route.ts
+│  │  │  ├─ auth/
+│  │  │  │  ├─ forgot-password/route.ts
+│  │  │  │  ├─ login/route.ts
+│  │  │  │  ├─ logout/route.ts
+│  │  │  │  ├─ reset-password/route.ts
+│  │  │  │  ├─ session/route.ts
+│  │  │  │  └─ signup/route.ts
+│  │  │  ├─ dashboard/summary/route.ts
+│  │  │  ├─ hints/route.ts
+│  │  │  ├─ history/route.ts
+│  │  │  ├─ submissions/[id]/route.ts
+│  │  │  └─ teacher/
+│  │  │     ├─ approvals/[id]/route.ts
+│  │  │     └─ students/
+│  │  │        ├─ link/route.ts
+│  │  │        └─ [id]/dashboard/route.ts
+│  │  ├─ auth/confirm/route.ts
+│  │  ├─ features/
+│  │  │  ├─ hint/page.tsx
+│  │  │  ├─ insight/page.tsx
+│  │  │  └─ misconception/page.tsx
+│  │  ├─ forgot-password/page.tsx
+│  │  ├─ login/page.tsx
+│  │  ├─ reset-password/page.tsx
+│  │  ├─ signup/page.tsx
+│  │  ├─ student/
+│  │  │  ├─ history/page.tsx
+│  │  │  ├─ result/[id]/page.tsx
+│  │  │  └─ upload/page.tsx
+│  │  ├─ teacher/
+│  │  │  ├─ dashboard/page.tsx
+│  │  │  ├─ pending/page.tsx
+│  │  │  └─ students/[id]/page.tsx
+│  │  ├─ favicon.ico
+│  │  ├─ globals.css
+│  │  ├─ layout.tsx
+│  │  └─ page.tsx
 │  ├─ components/
-│  │  ├─ auth/                 # 권한 보호 컴포넌트
-│  │  └─ layout/               # 헤더, 푸터 등 공통 UI
-│  ├─ context/                 # 역할 및 세션 컨텍스트
+│  │  ├─ auth/RoleGuard.tsx
+│  │  ├─ layout/
+│  │  │  ├─ Footer.tsx
+│  │  │  └─ Header.tsx
+│  │  └─ submission/ZoomableSubmissionImage.tsx
+│  ├─ context/RoleContext.tsx
 │  ├─ lib/
-│  │  ├─ ai/                   # 진단, 힌트 생성, provider, schema, guard
-│  │  ├─ auth/                 # 세션, 접근 제어, rate limit 타입
-│  │  ├─ db/                   # Supabase / Postgres 접근 계층
-│  │  ├─ ocr/                  # Vision OCR 로직
-│  │  └─ storage/              # 제출 이미지 저장 로직
-│  ├─ seed/                    # mock 데이터
-│  ├─ types/                   # 도메인 타입 정의
-│  └─ proxy.ts                 # 경로 보호 및 역할 기반 리다이렉트
+│  │  ├─ ai/
+│  │  │  ├─ guards/answer-leak-guard.ts
+│  │  │  ├─ providers/
+│  │  │  │  ├─ gemini-provider.ts
+│  │  │  │  ├─ mock-provider.ts
+│  │  │  │  └─ provider-types.ts
+│  │  │  ├─ schemas/diagnosis-schema.ts
+│  │  │  ├─ analyzer.ts
+│  │  │  ├─ format-ai-text.ts
+│  │  │  └─ hint-generator.ts
+│  │  ├─ auth/
+│  │  │  ├─ access.ts
+│  │  │  ├─ rate-limit.ts
+│  │  │  ├─ session.ts
+│  │  │  └─ types.ts
+│  │  ├─ db/
+│  │  │  ├─ queries.ts
+│  │  │  ├─ supabase-browser.ts
+│  │  │  └─ supabase.ts
+│  │  ├─ diagnosis/misconception-tags.ts
+│  │  ├─ ocr/vision-ocr.ts
+│  │  └─ storage/submission-images.ts
+│  ├─ seed/mock-data.ts
+│  ├─ types/
+│  │  ├─ diagnosis.ts
+│  │  └─ submission.ts
+│  └─ proxy.ts
 ├─ supabase/
-│  ├─ schema.sql               # DB 스키마
-│  └─ seed.sql                 # 시연용 초기 데이터
-├─ .env.example                # 환경 변수 예시
-├─ next.config.ts              # Next.js 설정
-└─ package.json                # 의존성 및 실행 스크립트
+│  ├─ schema.sql
+│  └─ seed.sql
+├─ .gitignore
+├─ eslint.config.mjs
+├─ next.config.ts
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ README.md
+└─ tsconfig.json
 ```
-
-## 실행 방법
-
-### 1. 의존성 설치
-
-```bash
-npm install
-```
-
-### 2. 환경 변수 설정
-
-`.env.example`를 참고해 `.env.local`을 구성합니다.
-
-```env
-AI_PROVIDER=gemini
-GEMINI_API_KEY=
-GOOGLE_CLOUD_VISION_API_KEY=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-POSTGRES_CONNECTION_STRING=
-NEXT_PUBLIC_APP_NAME=StepHint
-```
-
-### 3. 데이터베이스 준비
-
-- `supabase/schema.sql`로 스키마를 구성합니다.
-- `supabase/seed.sql`로 시연용 계정과 기본 데이터를 넣습니다.
-
-### 4. 로컬 서버 실행
-
-```bash
-npm run dev
-```
-
-기본 개발 서버는 `http://localhost:3000`에서 실행됩니다.
 
 ## 권한 및 보안 구조
 
