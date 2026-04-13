@@ -61,7 +61,8 @@ export async function analyzeSolution(input: AnalysisInput): Promise<AnalyzerRes
       misconceptionTags: validation.data.misconceptionTags,
       conceptsToReview: validation.data.conceptsToReview,
       nextHint: getSafeFallbackHint(),
-      retryQuestion: '문제의 핵심 개념을 다시 정리한 뒤, 막힌 단계 직전까지를 직접 다시 써볼까요?',
+      retryQuestion:
+        '문제의 핵심 개념을 다시 정리하고, 막히기 직전 단계까지만 스스로 다시 써볼 수 있을까요?',
       answerRevealed: false,
     };
 
@@ -100,12 +101,13 @@ function createFallbackResult(
   return {
     diagnosis: {
       problemType: '풀이 진단',
-      progressSummary: '문제를 풀기 위해 시도한 흔적이 확인되었습니다.',
-      stuckPoint: '현재 입력만으로는 막힌 지점을 충분히 특정하지 못했습니다.',
-      misconceptionTags: ['추가 풀이 정보 필요'],
-      conceptsToReview: ['문제 조건 정리', '직전 단계 검토'],
+      progressSummary: '문제를 풀기 위해 시도한 흔적은 확인했지만, 현재 정보만으로는 흐름이 충분하지 않습니다.',
+      stuckPoint: '입력된 정보만으로는 어디에서 막혔는지 분명하게 특정하기 어려웠습니다.',
+      misconceptionTags: [],
+      conceptsToReview: ['문제 조건 정리', '직전 단계 점검'],
       nextHint: getSafeFallbackHint(),
-      retryQuestion: '문제 조건을 한 줄씩 다시 적고, 마지막으로 확신했던 단계부터 이어서 써볼까요?',
+      retryQuestion:
+        '문제 조건을 다시 읽고, 마지막으로 확신했던 단계부터 어디까지 맞는지 적어볼 수 있을까요?',
       answerRevealed: false,
     },
     providerName,

@@ -10,6 +10,7 @@ import type {
 import type { ProfileRecord } from '@/lib/auth/types';
 import { createSignedSubmissionImageUrl } from '@/lib/storage/submission-images';
 import { sanitizeDiagnosisText } from '@/lib/ai/format-ai-text';
+import { filterVisibleMisconceptionTags } from '@/lib/diagnosis/misconception-tags';
 
 interface DiagnosisRow {
   problem_type: string;
@@ -133,7 +134,7 @@ function summarizeSubmissions(source: SubmissionWithDiagnosis[]) {
   for (const submission of completed) {
     const diagnosis = submission.diagnosis!;
 
-    for (const tag of diagnosis.misconceptionTags) {
+    for (const tag of filterVisibleMisconceptionTags(diagnosis.misconceptionTags)) {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     }
 

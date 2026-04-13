@@ -13,6 +13,7 @@ import {
   UserCheck,
   Users,
 } from 'lucide-react';
+import { ZoomableSubmissionImage } from '@/components/submission/ZoomableSubmissionImage';
 import type { DashboardSummary } from '@/types/submission';
 
 function formatDate(dateStr: string | null) {
@@ -39,11 +40,13 @@ export default function TeacherDashboardPage() {
 
   async function fetchDashboard() {
     setLoading(true);
+
     try {
       const response = await fetch('/api/dashboard/summary', { cache: 'no-store' });
       if (!response.ok) {
         throw new Error();
       }
+
       const json = (await response.json()) as DashboardSummary;
       setData(json);
     } catch {
@@ -98,12 +101,11 @@ export default function TeacherDashboardPage() {
       });
 
       const payload = (await response.json()) as { error?: string };
-
       if (!response.ok) {
         throw new Error(payload.error || '교사 계정 승인에 실패했습니다.');
       }
 
-      setSuccessMessage('교사 계정 승인을 완료했습니다.');
+      setSuccessMessage('교사 계정을 승인했습니다.');
       await fetchDashboard();
     } catch (approveError) {
       setError(
@@ -121,7 +123,7 @@ export default function TeacherDashboardPage() {
       <div className="gradient-page flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 size={40} className="mx-auto mb-4 animate-spin text-brand-400" />
-          <p className="font-medium text-surface-400">교사 대시보드를 불러오고 있습니다...</p>
+          <p className="font-medium text-surface-400">교사 대시보드를 불러오는 중입니다...</p>
         </div>
       </div>
     );
@@ -132,7 +134,7 @@ export default function TeacherDashboardPage() {
       <div className="gradient-page flex min-h-screen items-center justify-center">
         <div className="glass-card max-w-md p-10 text-center">
           <h2 className="mb-3 text-xl font-bold text-white">대시보드를 불러오지 못했습니다</h2>
-          <p className="text-sm text-surface-400">잠시 후 새로고침해 주세요.</p>
+          <p className="text-sm text-surface-400">잠시 후 새로고침해서 다시 확인해 주세요.</p>
         </div>
       </div>
     );
@@ -148,9 +150,13 @@ export default function TeacherDashboardPage() {
             <Users size={13} />
             교사 분석 대시보드
           </div>
-          <h1 className="mb-3 text-3xl font-bold md:text-5xl">학생별 풀이 흐름과 개입 포인트</h1>
+          <h1 className="mb-3 text-3xl font-bold md:text-5xl">
+            학생별 흐름과 반복 오개념을
+            <br className="hidden md:block" />한눈에 살펴보세요
+          </h1>
           <p className="max-w-3xl text-lg text-surface-400">
-            연결된 학생의 반복 오개념, 복습 개념, 최근 진단 메타데이터를 한 화면에서 확인할 수 있습니다.
+            연결한 학생의 최근 제출, 반복되는 오개념, 바로 개입이 필요한 학생을 한 화면에서
+            확인할 수 있습니다.
           </p>
         </div>
 
@@ -193,7 +199,7 @@ export default function TeacherDashboardPage() {
               <h2 className="text-xl font-bold text-white">승인 대기 교사 계정</h2>
             </div>
             <p className="mb-4 text-sm text-surface-500">
-              기존 교사 화면은 그대로 유지하고, 관리자 교사에게만 승인 기능을 추가로 노출합니다.
+              관리자 교사는 기존 화면을 그대로 사용하면서, 교사 승인 기능만 추가로 노출합니다.
             </p>
 
             {data.pendingTeacherApprovals.length > 0 ? (
@@ -246,14 +252,14 @@ export default function TeacherDashboardPage() {
               <h2 className="text-xl font-bold text-white">학생 연결 추가</h2>
             </div>
             <p className="mb-4 text-sm text-surface-500">
-              전체 학생 목록은 노출되지 않습니다. 정확한 이메일 또는 닉네임으로 학생을 연결하세요.
+              전체 학생 목록은 보이지 않습니다. 학생의 이메일 주소 또는 닉네임을 입력해 연결하세요.
             </p>
 
             <form className="space-y-3" onSubmit={handleLinkStudent}>
               <input
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                placeholder="student.one@example.com 또는 김길동123"
+                placeholder="이메일 주소 또는 닉네임을 입력하세요"
                 className="w-full rounded-xl border border-white/[0.08] bg-surface-900/60 px-4 py-3 text-sm text-surface-100 outline-none transition focus:border-brand-500/35 focus:ring-2 focus:ring-brand-500/20"
               />
               <button type="submit" disabled={linking} className="btn-primary w-full">
@@ -287,7 +293,7 @@ export default function TeacherDashboardPage() {
           <section className="glass-card p-7">
             <div className="mb-4 flex items-center gap-2">
               <AlertTriangle size={16} className="text-warm-400" />
-              <h2 className="text-xl font-bold text-white">개입 필요 학생</h2>
+              <h2 className="text-xl font-bold text-white">개입이 필요한 학생</h2>
             </div>
             <div className="space-y-3">
               {data.attentionStudents.length > 0 ? (
@@ -300,13 +306,17 @@ export default function TeacherDashboardPage() {
                       className="block rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition hover:border-warm-500/30"
                     >
                       <div className="mb-1 font-semibold text-white">{student.studentName}</div>
-                      <div className="mb-2 text-xs text-surface-500">닉네임: {student.studentUsername}</div>
-                      <div className="text-sm leading-relaxed text-surface-400">{student.attentionReason}</div>
+                      <div className="mb-2 text-xs text-surface-500">
+                        닉네임 {student.studentUsername}
+                      </div>
+                      <div className="text-sm leading-relaxed text-surface-400">
+                        {student.attentionReason}
+                      </div>
                     </Link>
                   ))
               ) : (
                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 text-sm text-surface-500">
-                  현재는 즉시 개입이 필요한 학생이 없습니다.
+                  현재 바로 개입이 필요한 학생은 없습니다.
                 </div>
               )}
             </div>
@@ -317,7 +327,9 @@ export default function TeacherDashboardPage() {
           <section className="glass-card p-7">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-white">학생 카드</h2>
-              <p className="mt-1 text-sm text-surface-500">학생 카드를 눌러 개인 대시보드와 최근 풀이 이미지를 확인하세요.</p>
+              <p className="mt-1 text-sm text-surface-500">
+                학생별 최근 흐름과 반복 오개념을 빠르게 확인해 보세요.
+              </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -330,7 +342,7 @@ export default function TeacherDashboardPage() {
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                       <div className="text-lg font-bold text-white">{student.studentName}</div>
-                      <div className="text-sm text-surface-500">닉네임: {student.studentUsername}</div>
+                      <div className="text-sm text-surface-500">닉네임 {student.studentUsername}</div>
                     </div>
                     <div className="rounded-xl border border-brand-500/15 bg-brand-500/10 px-3 py-1 text-xs font-semibold text-brand-300">
                       제출 {student.submissionCount}건
@@ -340,7 +352,9 @@ export default function TeacherDashboardPage() {
                   <div className="mb-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-white/[0.05] bg-surface-900/50 p-3">
                       <div className="text-xs text-surface-500">최근 제출</div>
-                      <div className="mt-1 text-sm font-semibold text-surface-200">{formatDate(student.lastSubmissionAt)}</div>
+                      <div className="mt-1 text-sm font-semibold text-surface-200">
+                        {formatDate(student.lastSubmissionAt)}
+                      </div>
                     </div>
                     <div className="rounded-2xl border border-white/[0.05] bg-surface-900/50 p-3">
                       <div className="text-xs text-surface-500">최근 유형</div>
@@ -358,16 +372,18 @@ export default function TeacherDashboardPage() {
                         </span>
                       ))
                     ) : (
-                      <span className="text-sm text-surface-600">아직 분석 데이터가 없습니다.</span>
+                      <span className="text-sm text-surface-600">아직 분석 데이터가 충분하지 않습니다.</span>
                     )}
                   </div>
 
                   <div className="text-sm leading-relaxed text-surface-400">
-                    {student.attentionReason || student.latestStuckPoint || '최근 진단이 쌓이면 막힌 지점이 여기에 표시됩니다.'}
+                    {student.attentionReason ||
+                      student.latestStuckPoint ||
+                      '최근 진단이 쌓이면 막힌 지점이 이곳에 표시됩니다.'}
                   </div>
 
                   <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-400">
-                    학생 대시보드 열기
+                    학생 대시보드 보기
                     <ArrowRight size={15} className="transition group-hover:translate-x-0.5" />
                   </div>
                 </Link>
@@ -382,15 +398,23 @@ export default function TeacherDashboardPage() {
                 <h2 className="text-xl font-bold text-white">전체 오개념 상위</h2>
               </div>
               <div className="space-y-3">
-                {data.topMisconceptions.slice(0, 5).map((item, index) => (
-                  <div key={item.tag} className="flex items-center gap-3">
-                    <div className="w-7 text-right text-sm font-bold text-surface-600">#{index + 1}</div>
-                    <div className="flex-1 rounded-2xl border border-white/[0.05] bg-surface-900/55 px-4 py-3 font-medium text-surface-200">
-                      {item.tag}
+                {data.topMisconceptions.length > 0 ? (
+                  data.topMisconceptions.slice(0, 5).map((item, index) => (
+                    <div key={item.tag} className="flex items-center gap-3">
+                      <div className="w-7 text-right text-sm font-bold text-surface-600">
+                        #{index + 1}
+                      </div>
+                      <div className="flex-1 rounded-2xl border border-white/[0.05] bg-surface-900/55 px-4 py-3 font-medium text-surface-200">
+                        {item.tag}
+                      </div>
+                      <div className="text-sm font-semibold text-warm-400">{item.count}</div>
                     </div>
-                    <div className="text-sm font-semibold text-warm-400">{item.count}</div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 text-sm text-surface-500">
+                    아직 집계할 오개념 데이터가 없습니다.
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -402,24 +426,60 @@ export default function TeacherDashboardPage() {
               <div className="space-y-3">
                 {data.recentSubmissions.length > 0 ? (
                   data.recentSubmissions.slice(0, 4).map((submission) => (
-                    <div key={submission.id} className="rounded-3xl border border-white/[0.06] bg-white/[0.03] p-4">
+                    <div
+                      key={submission.id}
+                      className="rounded-3xl border border-white/[0.06] bg-white/[0.03] p-4"
+                    >
                       <div className="mb-2 flex items-start justify-between gap-3">
                         <div>
                           <div className="font-semibold text-white">
                             {submission.diagnosis?.problemType || '분석 대기 중'}
                           </div>
-                          <div className="mt-1 text-xs text-surface-500">{formatDate(submission.createdAt)}</div>
+                          <div className="mt-1 text-xs text-surface-500">
+                            {formatDate(submission.createdAt)}
+                          </div>
+                          {submission.studentName ? (
+                            <div className="mt-1 text-xs text-surface-400">
+                              {submission.studentName}
+                              {submission.studentUsername ? ` · ${submission.studentUsername}` : ''}
+                            </div>
+                          ) : null}
                         </div>
-                        <span className="badge badge-brand text-xs">{submission.providerName || 'provider 없음'}</span>
+                        <span className="badge badge-brand text-xs">
+                          {submission.providerName || 'provider 없음'}
+                        </span>
                       </div>
 
-                      {submission.problemImageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={submission.problemImageUrl} alt="문제 이미지" className="mb-3 h-32 w-full rounded-2xl object-cover" />
+                      {submission.problemImageUrl || submission.solutionImageUrl ? (
+                        <div
+                          className={`mb-3 grid gap-3 ${
+                            submission.problemImageUrl && submission.solutionImageUrl
+                              ? 'sm:grid-cols-2'
+                              : ''
+                          }`}
+                        >
+                          {submission.problemImageUrl ? (
+                            <ZoomableSubmissionImage
+                              src={submission.problemImageUrl}
+                              alt="문제 이미지"
+                              label="문제 이미지"
+                              frameClassName="h-32"
+                            />
+                          ) : null}
+                          {submission.solutionImageUrl ? (
+                            <ZoomableSubmissionImage
+                              src={submission.solutionImageUrl}
+                              alt="풀이 이미지"
+                              label="풀이 이미지"
+                              frameClassName="h-32"
+                            />
+                          ) : null}
+                        </div>
                       ) : null}
 
                       <p className="text-sm leading-relaxed text-surface-400">
-                        {submission.diagnosis?.stuckPoint || '진단이 완료되면 막힌 지점이 표시됩니다.'}
+                        {submission.diagnosis?.stuckPoint ||
+                          '진단이 완료되면 막힌 지점이 여기에 표시됩니다.'}
                       </p>
                     </div>
                   ))

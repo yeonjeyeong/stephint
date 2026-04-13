@@ -11,6 +11,8 @@ import {
   Tag,
   Target,
 } from 'lucide-react';
+import { ZoomableSubmissionImage } from '@/components/submission/ZoomableSubmissionImage';
+import { filterVisibleMisconceptionTags } from '@/lib/diagnosis/misconception-tags';
 import type { StudentDashboard } from '@/types/submission';
 
 function formatDate(dateStr: string | null) {
@@ -63,7 +65,7 @@ export default function TeacherStudentDashboardPage({
       <div className="gradient-page flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 size={40} className="mx-auto mb-4 animate-spin text-brand-400" />
-          <p className="font-medium text-surface-400">학생 대시보드를 불러오고 있습니다...</p>
+          <p className="font-medium text-surface-400">학생 대시보드를 불러오는 중입니다...</p>
         </div>
       </div>
     );
@@ -85,7 +87,10 @@ export default function TeacherStudentDashboardPage({
   return (
     <div className="gradient-page min-h-screen">
       <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">
-        <Link href="/teacher/dashboard" className="mb-8 inline-flex items-center gap-2 text-sm text-surface-500 transition hover:text-brand-400">
+        <Link
+          href="/teacher/dashboard"
+          className="mb-8 inline-flex items-center gap-2 text-sm text-surface-500 transition hover:text-brand-400"
+        >
           <ArrowLeft size={16} />
           교사 대시보드로 돌아가기
         </Link>
@@ -94,7 +99,7 @@ export default function TeacherStudentDashboardPage({
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-500/15 bg-brand-500/10 px-4 py-1.5 text-xs font-semibold text-brand-400">
               <Target size={13} />
-              학생별 사고 분석
+              학생별 분석
             </div>
             <h1 className="text-3xl font-bold md:text-5xl">{data.student.displayName}</h1>
             <p className="mt-2 text-lg text-surface-400">
@@ -150,7 +155,9 @@ export default function TeacherStudentDashboardPage({
                 {data.topMisconceptions.length > 0 ? (
                   data.topMisconceptions.map((item, index) => (
                     <div key={item.tag} className="flex items-center gap-3">
-                      <div className="w-7 text-right text-sm font-bold text-surface-600">#{index + 1}</div>
+                      <div className="w-7 text-right text-sm font-bold text-surface-600">
+                        #{index + 1}
+                      </div>
                       <div className="flex-1 rounded-2xl border border-white/[0.05] bg-surface-900/55 px-4 py-3 font-medium text-surface-200">
                         {item.tag}
                       </div>
@@ -158,7 +165,9 @@ export default function TeacherStudentDashboardPage({
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-surface-500">완료된 진단이 생기면 반복 오개념이 나타납니다.</p>
+                  <p className="text-sm text-surface-500">
+                    완료된 진단이 더 쌓이면 반복 오개념이 여기에 표시됩니다.
+                  </p>
                 )}
               </div>
             </div>
@@ -210,60 +219,100 @@ export default function TeacherStudentDashboardPage({
             </div>
             <div className="space-y-4">
               {data.recentSubmissions.length > 0 ? (
-                data.recentSubmissions.map((submission) => (
-                  <div key={submission.id} className="rounded-3xl border border-white/[0.06] bg-white/[0.03] p-5">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-lg font-bold text-white">
-                          {submission.diagnosis?.problemType || '분석 결과 대기'}
+                data.recentSubmissions.map((submission) => {
+                  const visibleTags = submission.diagnosis
+                    ? filterVisibleMisconceptionTags(submission.diagnosis.misconceptionTags)
+                    : [];
+
+                  return (
+                    <div
+                      key={submission.id}
+                      className="rounded-3xl border border-white/[0.06] bg-white/[0.03] p-5"
+                    >
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-lg font-bold text-white">
+                            {submission.diagnosis?.problemType || '분석 결과 대기 중'}
+                          </div>
+                          <div className="mt-1 text-xs text-surface-500">
+                            {formatDate(submission.createdAt)}
+                          </div>
                         </div>
-                        <div className="mt-1 text-xs text-surface-500">{formatDate(submission.createdAt)}</div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className="badge badge-brand text-xs">
+                            {submission.providerName || 'provider 없음'}
+                          </span>
+                          {submission.fallbackUsed ? (
+                            <span className="badge badge-warm text-xs">fallback</span>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className="badge badge-brand text-xs">{submission.providerName || 'provider 없음'}</span>
-                        {submission.fallbackUsed ? <span className="badge badge-warm text-xs">fallback</span> : null}
-                      </div>
+
+                      {submission.problemImageUrl || submission.solutionImageUrl ? (
+                        <div
+                          className={`mb-4 grid gap-3 ${
+                            submission.problemImageUrl && submission.solutionImageUrl
+                              ? 'md:grid-cols-2'
+                              : ''
+                          }`}
+                        >
+                          {submission.problemImageUrl ? (
+                            <ZoomableSubmissionImage
+                              src={submission.problemImageUrl}
+                              alt="문제 이미지"
+                              label="문제 이미지"
+                              frameClassName="h-40"
+                            />
+                          ) : null}
+                          {submission.solutionImageUrl ? (
+                            <ZoomableSubmissionImage
+                              src={submission.solutionImageUrl}
+                              alt="풀이 이미지"
+                              label="풀이 이미지"
+                              frameClassName="h-40"
+                            />
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {submission.diagnosis ? (
+                        <>
+                          <div className="mb-3 text-sm leading-relaxed text-surface-400">
+                            <span className="font-semibold text-surface-200">막힌 지점</span>{' '}
+                            {submission.diagnosis.stuckPoint}
+                          </div>
+
+                          <div className="mb-3 flex flex-wrap gap-2">
+                            {visibleTags.length > 0 ? (
+                              visibleTags.map((tag) => (
+                                <span key={tag} className="badge badge-warm">
+                                  {tag}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-surface-500">
+                                오개념 태그를 아직 구체적으로 특정하지 못했습니다.
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="rounded-2xl border border-brand-500/15 bg-brand-500/8 p-4">
+                            <div className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-brand-300">
+                              다음 힌트
+                            </div>
+                            <div className="text-sm leading-relaxed text-surface-200">
+                              {submission.diagnosis.nextHint}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="rounded-2xl border border-white/[0.06] bg-surface-900/40 p-4 text-sm text-surface-500">
+                          아직 진단이 완료되지 않았습니다.
+                        </div>
+                      )}
                     </div>
-
-                    {submission.problemImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={submission.problemImageUrl} alt="문제 이미지" className="mb-3 h-40 w-full rounded-2xl object-cover" />
-                    ) : null}
-
-                    {submission.solutionImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={submission.solutionImageUrl} alt="풀이 이미지" className="mb-3 h-40 w-full rounded-2xl object-cover" />
-                    ) : null}
-
-                    {submission.diagnosis ? (
-                      <>
-                        <div className="mb-3 text-sm leading-relaxed text-surface-400">
-                          <span className="font-semibold text-surface-200">막힌 지점:</span>{' '}
-                          {submission.diagnosis.stuckPoint}
-                        </div>
-                        <div className="mb-3 flex flex-wrap gap-2">
-                          {submission.diagnosis.misconceptionTags.map((tag) => (
-                            <span key={tag} className="badge badge-warm">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="rounded-2xl border border-brand-500/15 bg-brand-500/8 p-4">
-                          <div className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-brand-300">
-                            다음 힌트
-                          </div>
-                          <div className="text-sm leading-relaxed text-surface-200">
-                            {submission.diagnosis.nextHint}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="rounded-2xl border border-white/[0.06] bg-surface-900/40 p-4 text-sm text-surface-500">
-                        아직 진단이 완료되지 않았습니다.
-                      </div>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="rounded-3xl border border-white/[0.06] bg-white/[0.03] p-8 text-center text-surface-500">
                   아직 완료된 진단 기록이 없습니다.
