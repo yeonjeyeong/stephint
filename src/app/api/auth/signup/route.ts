@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { buildAuthSession, getDefaultRedirectForUser } from '@/lib/auth/session';
 import { createSupabaseServerClient } from '@/lib/db/supabase';
 
-const nicknamePattern = /^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ._-]+$/u;
+const nicknamePattern = /^[A-Za-z0-9가-힣_-]+$/u;
 
 const signupSchema = z
   .object({
@@ -11,7 +11,7 @@ const signupSchema = z
     nickname: z.string().trim().min(2).max(24).regex(nicknamePattern).optional(),
     username: z.string().trim().min(2).max(24).regex(nicknamePattern).optional(),
     displayName: z.string().trim().min(2).max(40),
-      role: z.enum(['student', 'teacher']),
+    role: z.enum(['student', 'teacher']),
     password: z
       .string()
       .min(8)
@@ -33,7 +33,7 @@ const signupSchema = z
 function getSignupValidationMessage(error: z.ZodError) {
   const issue = error.issues[0];
   if (!issue) {
-    return '가입 정보를 다시 확인해 주세요.';
+    return '입력한 정보를 다시 확인해 주세요.';
   }
 
   const field = issue.path[0];
@@ -47,14 +47,14 @@ function getSignupValidationMessage(error: z.ZodError) {
   }
 
   if (field === 'nickname' || field === 'username') {
-    return '닉네임은 한글, 영문, 숫자, 점(.), 밑줄(_), 하이픈(-)만 사용할 수 있습니다.';
+    return '닉네임은 한글, 영문, 숫자, 밑줄(_), 하이픈(-)만 사용할 수 있습니다.';
   }
 
   if (field === 'password') {
     return '비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 모두 포함해야 합니다.';
   }
 
-  return '가입 정보를 다시 확인해 주세요.';
+  return '입력한 정보를 다시 확인해 주세요.';
 }
 
 export async function POST(request: NextRequest) {
@@ -70,11 +70,14 @@ export async function POST(request: NextRequest) {
     }
 
     const nickname = (parsed.data.nickname || parsed.data.username || '').trim();
+    const emailRedirectTo = new URL('/auth/confirm', request.nextUrl.origin).toString();
     const supabase = await createSupabaseServerClient();
+
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email.trim().toLowerCase(),
       password: parsed.data.password,
       options: {
+        emailRedirectTo,
         data: {
           username: nickname,
           display_name: parsed.data.displayName.trim(),
@@ -102,14 +105,14 @@ export async function POST(request: NextRequest) {
     if (!data.session) {
       return NextResponse.json({
         needsEmailConfirmation: true,
-        message: '이메일 인증 후 로그인해 주세요.',
+        message: '이메일 인증 메일을 보냈습니다. 메일의 버튼을 누르면 자동으로 로그인됩니다.',
       });
     }
 
     const session = await buildAuthSession(supabase);
     if (!session) {
       return NextResponse.json(
-        { error: '회원가입은 완료되었지만 세션을 확인하지 못했습니다.' },
+        { error: '회원가입은 완료됐지만 세션을 확인하지 못했습니다.' },
         { status: 500 }
       );
     }

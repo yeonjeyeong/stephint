@@ -21,6 +21,21 @@ export default function LoginPage() {
   const { role, user, login, loading } = useRole();
   const roleFromQuery = searchParams.get('role') === 'teacher' ? 'teacher' : 'student';
   const nextPath = searchParams.get('next') || undefined;
+  const authStatus = searchParams.get('auth');
+  const authError = searchParams.get('error');
+
+  const authFeedback =
+    authStatus === 'email_confirmed_manual_login'
+      ? {
+          tone: 'info' as const,
+          message: '이메일 인증은 완료됐지만 자동 로그인을 마치지 못했습니다. 한 번만 다시 로그인해 주세요.',
+        }
+      : authError === 'email_confirmation_failed'
+        ? {
+            tone: 'error' as const,
+            message: '이메일 인증 링크가 만료되었거나 유효하지 않습니다. 최신 인증 메일에서 다시 시도해 주세요.',
+          }
+        : null;
 
   const [selectedRole, setSelectedRole] = useState<AppRole>(roleFromQuery);
   const [email, setEmail] = useState('');
@@ -179,6 +194,18 @@ export default function LoginPage() {
                 className="w-full rounded-2xl border border-white/10 bg-[rgba(255,255,255,0.05)] px-4 py-3 text-sm text-white outline-none transition focus:border-[rgba(255,231,175,0.35)] focus:ring-2 focus:ring-[rgba(255,231,175,0.15)]"
               />
             </div>
+
+            {authFeedback ? (
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm ${
+                  authFeedback.tone === 'error'
+                    ? 'border border-red-400/20 bg-red-400/10 text-red-200'
+                    : 'border border-accent-400/20 bg-accent-400/10 text-accent-100'
+                }`}
+              >
+                {authFeedback.message}
+              </div>
+            ) : null}
 
             {error ? (
               <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
